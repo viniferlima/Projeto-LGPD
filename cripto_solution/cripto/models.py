@@ -2,6 +2,8 @@ from urllib import request
 from django.db import models
 from hashlib import algorithms_available
 import json
+from django.http import JsonResponse
+from matplotlib.font_manager import json_load
 import pymongo
 import time
 from cryptography.fernet import Fernet
@@ -15,15 +17,43 @@ class Model():
         return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/TopicosAvançados?retryWrites=true&w=majority")
 
     def createConnectionDBKeys():
-        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/nó2?retryWrites=true&w=majority")
+        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/Keys?retryWrites=true&w=majority")
 
+    def generate_secret_key_for_AES_cipher():
+        # AES key length must be either 16, 24, or 32 bytes long
+        AES_key_length = 12 # use larger value in production
+        # generate a random secret key with the decided key length
+        # this secret key will be used to create AES cipher for encryption/decryption
+        secret_key = os.urandom(AES_key_length)
+        # encode this secret key for storing safely in database
+        encoded_secret_key = base64.b64encode(secret_key).decode("utf-8")
+        return encoded_secret_key
+
+    def encrypt(crypto_key, text):
+        BS = len(crypto_key)
+        IV = "1234567890123456"
+        pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
+        cryptor = AES.new(crypto_key.encode("utf8"), AES.MODE_CBC, IV.encode("utf8"))
+        ciphertext = cryptor.encrypt(bytes(pad(text), encoding="utf8"))
+
+        return base64.b64encode(ciphertext)
+
+    def decrypt(crypto_key, text):
+        unpad = lambda s: s[0:-ord(s[-1:])]
+        decode = base64.b64decode(text)
+        IV = "1234567890123456"
+        cryptor = AES.new(crypto_key.encode("utf8"), AES.MODE_CBC, IV.encode("utf8"))
+
+        plain_text = cryptor.decrypt(decode)
+
+        return unpad(plain_text)
 
     def insert_sale_old(request):
         cluster = Model.createConnectionDB()
-        db = cluster['client']
-        collection = db['vendas']
+        db = cluster['TopicosAvançados']
+        collection = db['Vendas']
 
-        result =  collection.insert_one(json.loads(request.body))
+        result =  collection.insert_one(request)
 
         return print("Sale and user data added in the database")    
 
@@ -44,11 +74,51 @@ class Model():
         result =  collection.insert_one(request)
         
         return print("User added in the database")
+    
+    def find_user(cpf_user):
+        json_key = Model.key_find(cpf_user)
+        #json_key = json_load(data)
+        id_chave = json_key['id']
+        crypto_key = json_key['chave']
+        print("Chave ID na Chave:")
+        print(id_chave)
+        print(crypto_key)
+
+        clusterUser = Model.createConnectionDB()
+        dbUser = clusterUser['TopicosAvançados']
+        collectionUser = dbUser['cliente']
+        user =  collectionUser.find_one({"id_chave":id_chave})
+        print("Chave ID no User:")
+        print(user['id_chave'])
+
+        name = user['nome_cli']
+        tefelone = user['telefone_cli']
+        email = user['email_cli']
+        cpf = user['cpf_cli']
+
+        encrypto_array = [name,tefelone,email,cpf]
+        decrypto_array = []
+
+        for data in encrypto_array:
+            crypto_data = Model.decrypt(crypto_key,data)
+            decrypto_array.append(crypto_data)
+        
+        # request = {"nome_cli":decrypto_array[0],
+        #             "telefone_cli": decrypto_array[1], 
+        #             "email_cli": decrypto_array[2], 
+        #             "cpf_cli": decrypto_array[3]}
+
+        request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
+
+        if request:
+         return request
+        else:
+         return JsonResponse({"message" : "User doesnt found."}, status=200)
 
     def key_insert(key):
         cluster = Model.createConnectionDBKeys()
-        db = cluster['nó2']
-        collection = db['ChaveAcesso'] 
+        db = cluster['Keys']
+        collection = db['CryptoKey'] 
 
         result = collection.insert_one(key)
 
@@ -56,57 +126,19 @@ class Model():
 
     def key_find(cpf_user):
         cluster = Model.createConnectionDBKeys()
-        db = cluster['nó2']
-        collection = db['ChaveAcesso']
+        db = cluster['Keys']
+        collection = db['CryptoKey']
 
-        result = collection.find_one({"cli_cpf":cpf_user})
+        result = collection.find_one({"cpf_client":cpf_user})
 
         return result         
 
     def key_delete(cpf_user):
         cluster = Model.createConnectionDBKeys()
-        db = cluster['nó2']
-        collection = db['ChaveAcesso']
+        db = cluster['Keys']
+        collection = db['CryptoKey']
 
         result = collection.delete_one({"cli_cpf":cpf_user})
 
         return print("Key deleted from database")         
 
-    def generate_secret_key_for_AES_cipher():
-        # AES key length must be either 16, 24, or 32 bytes long
-        AES_key_length = 32 # use larger value in production
-        # generate a random secret key with the decided key length
-        # this secret key will be used to create AES cipher for encryption/decryption
-        secret_key = os.urandom(AES_key_length)
-        # encode this secret key for storing safely in database
-        encoded_secret_key = base64.b64encode(secret_key)
-        
-        return encoded_secret_key
-
-    def encrypt_message(private_msg, encoded_secret_key, padding_character):
-        # decode the encoded secret key
-        secret_key = base64.b64decode(encoded_secret_key)
-        # use the decoded secret key to create a AES cipher
-        cipher = AES.new(secret_key,mode= AES.MODE_CFB)
-        # pad the private_msg
-        # because AES encryption requires the length of the msg to be a multiple of 16
-        padded_private_msg = private_msg + (padding_character * ((16-len(private_msg)) % 16))
-        # use the cipher to encrypt the padded message
-        encrypted_msg = cipher.encrypt(padded_private_msg.encode("utf-8"))
-        # encode the encrypted msg for storing safely in the database
-        encoded_encrypted_msg = base64.b64encode(encrypted_msg)
-        # return encoded encrypted message
-        return encoded_encrypted_msg
-
-    def decrypt_message(encoded_encrypted_msg, encoded_secret_key, padding_character):
-        # decode the encoded encrypted message and encoded secret key
-        secret_key = base64.b64decode(encoded_secret_key)
-        encrypted_msg = base64.b64decode(encoded_encrypted_msg)
-        # use the decoded secret key to create a AES cipher
-        cipher = AES.new(secret_key,mode= AES.MODE_CFB)
-        # use the cipher to decrypt the encrypted message
-        decrypted_msg = cipher.decrypt(encrypted_msg)
-        # unpad the encrypted message
-        unpadded_private_msg = decrypted_msg.rstrip()
-        # return a decrypted original private message
-        return decrypted_msg
