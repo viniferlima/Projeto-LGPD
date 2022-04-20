@@ -115,7 +115,11 @@ def find_user(request, cpf):
     return JsonResponse({"message":"Erro na requisição. Método esperado: GET."}, status=500) 
 
 
+def Split_Venda(request):
+    if request.method == "POST":
+        return Model.Split_Sale()
 
+    return JsonResponse({"message":"Venda Efetuada."}, status=500) 
 
     
 
