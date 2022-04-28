@@ -1,4 +1,6 @@
+from asyncio.windows_events import NULL
 from http.client import HTTPResponse
+from pickle import FALSE, TRUE
 from urllib import request
 from django.db import models
 from hashlib import algorithms_available
@@ -50,6 +52,16 @@ class Model():
 
         return unpad(plain_text)
 
+    def key_verification(cpf_cli):
+        cluster = Model.createConnectionDBKeys()
+        db = cluster['Keys']
+        collection = db['CryptoKey']
+
+        result = collection.find_one({"cpf_cli":cpf_cli})
+        if result == NULL:
+            return FALSE
+        return result
+
     def Split_Sale():
         cluster = Model.createConnectionDB()
         db = cluster['TopicosAvançados']
@@ -85,8 +97,7 @@ class Model():
                    "idCli": id_cli}
             collectionVendaSimples.insert_one(requestVendaSimples)
         return HTTPResponse("Tabela Particionada") 
-                    
-            
+                              
     def insert_sale_old(request):
         cluster = Model.createConnectionDB()
         db = cluster['TopicosAvançados']
@@ -99,7 +110,7 @@ class Model():
     def insert_sale(request):
         cluster = Model.createConnectionDB()
         db = cluster['client']
-        collection = db['vendas']
+        collection = db['VendaSimples']
 
         result =  collection.insert_one(json.loads(request.body))
 
@@ -108,7 +119,7 @@ class Model():
     def insert_user(request):
         cluster = Model.createConnectionDB()
         db = cluster['TopicosAvançados']
-        collection = db['cliente']
+        collection = db['client']
 
         result =  collection.insert_one(request)
         
@@ -125,7 +136,7 @@ class Model():
 
         clusterUser = Model.createConnectionDB()
         dbUser = clusterUser['TopicosAvançados']
-        collectionUser = dbUser['cliente']
+        collectionUser = dbUser['client']
         user =  collectionUser.find_one({"id_chave":id_chave})
         print("Chave ID no User:")
         print(user['id_chave'])

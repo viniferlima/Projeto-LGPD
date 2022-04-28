@@ -1,5 +1,8 @@
+from ast import If
+from doctest import FAIL_FAST
 import json
 from math import prod
+from pickle import FALSE
 import re
 from django.shortcuts import render
 from django.urls import path
@@ -7,9 +10,6 @@ from matplotlib.font_manager import json_load
 from .models import Model
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpRequest,HttpResponse,JsonResponse
-
-# Coisas para melhoerar:
-#     Verificação se há ou não uma chave no banco com o CPF
 
 @csrf_exempt
 def all_data_insert_sale(request):
@@ -64,7 +64,6 @@ def all_data_insert_sale(request):
 @csrf_exempt
 def add_new_user(request):
     if request.method == "POST":
-        crypto_key = Model.generate_secret_key_for_AES_cipher()
 
         dados = json.load(request)
         name = dados['nome_cli']
@@ -72,11 +71,16 @@ def add_new_user(request):
         email = dados['email_cli']
         cpf = dados['cpf_cli']
 
-        id_chave = id(crypto_key)
-        key = {"id":id_chave,
+        key_verification = Model.key_verification(cpf)
+        if key_verification == FALSE:
+            crypto_key = Model.generate_secret_key_for_AES_cipher()
+            id_chave = id(crypto_key)
+            key = {"id":id_chave,
                 "chave":crypto_key,
                 "cpf_client":cpf}
-        Model.key_insert(key)
+            Model.key_insert(key)
+        else:
+            id_chave = key_verification['id']
 
         decrypto_array = [name,tefelone,email,cpf]
         crypto_array = []
@@ -106,14 +110,12 @@ def delete_user(request,cpf):
 
     return JsonResponse({"message":"Erro na requisição. Método esperado: DELETE."}, status=500) 
 
-
 def find_user(request, cpf):
     if request.method == "GET":
         result = Model.find_user(cpf)
         return HttpResponse(result, status=500) 
         
     return JsonResponse({"message":"Erro na requisição. Método esperado: GET."}, status=500) 
-
 
 def Split_Venda(request):
     if request.method == "POST":
