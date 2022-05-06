@@ -69,39 +69,37 @@ def add_new_user(request):
         name = dados['nome_cli']
         tefelone = dados['telefone_cli']
         email = dados['email_cli']
-        cpf = dados['cpf_cli']
+        cpf = str(dados['cpf_cli'])
 
         key_verification = Model.key_verification(cpf)
-        if key_verification == FALSE:
+        print("Verificação feita:")
+        print(key_verification)
+        if key_verification == None:
             crypto_key = Model.generate_secret_key_for_AES_cipher()
             id_chave = id(crypto_key)
             key = {"id":id_chave,
                 "chave":crypto_key,
                 "cpf_client":cpf}
             Model.key_insert(key)
-        else:
-            id_chave = key_verification['id']
 
-        decrypto_array = [name,tefelone,email,cpf]
-        crypto_array = []
+            decrypto_array = [name,tefelone,email,cpf]
+            crypto_array = []
 
-        for data in decrypto_array:
-            print(data)
+            for data in decrypto_array:
+                print(data)
 
-        for data in decrypto_array:
-            crypto_data = Model.encrypt(crypto_key,data)
-            crypto_array.append(crypto_data)
-        
-        request = {"nome_cli":crypto_array[0],
-                    "telefone_cli": crypto_array[1], 
-                    "email_cli": crypto_array[2], 
-                    "cpf_cli": crypto_array[3],
-                    "id_chave":id_chave}
-
-        Model.insert_user(request)
-        return HttpResponse("User added!")
-
-
+            for data in decrypto_array:
+                crypto_data = Model.encrypt(crypto_key,data)
+                crypto_array.append(crypto_data)
+            
+            request = {"nome_cli":crypto_array[0],
+                        "telefone_cli": crypto_array[1], 
+                        "email_cli": crypto_array[2], 
+                        "cpf_cli": crypto_array[3],
+                        "id_chave":id_chave}
+            Model.insert_user(request)
+            return HttpResponse("User added!")
+        return HttpResponse("User not added. There is recorded in database with the same datas.")
     return JsonResponse({"message":"Erro na requisição. Método esperado: POST."}, status=500) 
 
 def delete_user(request,cpf):
@@ -123,7 +121,11 @@ def Split_Venda(request):
 
     return JsonResponse({"message":"Venda Efetuada."}, status=500) 
 
-    
+def client_data_portability(request):
+    if request.method == "POST":
+        return Model.client_data_portability()
+
+    return JsonResponse({"message":"Erro na requisição. Método esperado: POST."}, status=500)     
 
 
 
