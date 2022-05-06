@@ -12,7 +12,7 @@ import time
 from cryptography.fernet import Fernet
 from pymongo import MongoClient
 from Crypto.Cipher import AES
-import uuid
+import uuid 
 import base64, os
 
 class Model():
@@ -22,6 +22,12 @@ class Model():
 
     def createConnectionDBKeys():
         return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/Keys?retryWrites=true&w=majority")
+
+    def createConnectionDBPortability():
+        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/DataPortability?retryWrites=true&w=majority", 
+        ssl=True,
+        ssl_certfile='selfsigned.crt',
+        ssl_keyfile='private.key')
 
     def generate_secret_key_for_AES_cipher():
         # AES key length must be either 16, 24, or 32 bytes long
@@ -58,6 +64,7 @@ class Model():
         collection = db['CryptoKey']
 
         result = collection.find_one({"cpf_cli":cpf_cli})
+        print(result)
         if result == NULL:
             return FALSE
         return result
@@ -109,7 +116,7 @@ class Model():
 
     def insert_sale(request):
         cluster = Model.createConnectionDB()
-        db = cluster['client']
+        db = cluster['TopicosAvançados']
         collection = db['VendaSimples']
 
         result =  collection.insert_one(json.loads(request.body))
@@ -119,7 +126,7 @@ class Model():
     def insert_user(request):
         cluster = Model.createConnectionDB()
         db = cluster['TopicosAvançados']
-        collection = db['client']
+        collection = db['Cliente']
 
         result =  collection.insert_one(request)
         
@@ -127,7 +134,6 @@ class Model():
     
     def find_user(cpf_user):
         json_key = Model.key_find(cpf_user)
-        #json_key = json_load(data)
         id_chave = json_key['id']
         crypto_key = json_key['chave']
         print("Chave ID na Chave:")
@@ -136,7 +142,7 @@ class Model():
 
         clusterUser = Model.createConnectionDB()
         dbUser = clusterUser['TopicosAvançados']
-        collectionUser = dbUser['client']
+        collectionUser = dbUser['Cliente']
         user =  collectionUser.find_one({"id_chave":id_chave})
         print("Chave ID no User:")
         print(user['id_chave'])
@@ -152,11 +158,6 @@ class Model():
         for data in encrypto_array:
             crypto_data = Model.decrypt(crypto_key,data)
             decrypto_array.append(crypto_data)
-        
-        # request = {"nome_cli":decrypto_array[0],
-        #             "telefone_cli": decrypto_array[1], 
-        #             "email_cli": decrypto_array[2], 
-        #             "cpf_cli": decrypto_array[3]}
 
         request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
 
@@ -192,3 +193,21 @@ class Model():
 
         return print("Key deleted from database")         
 
+    def client_data_portability(cpf_user):
+        cluster = Model.createConnectionDBPortability()
+        db = cluster['DataPortability']
+        collection = db['client']
+
+        client = Model.find_user(cpf_user)
+
+        insertClient =  collection.insert_one(client)
+
+        if (insertClient.acknowledged):
+            deleteKey = Model.key_delete(cpf_user)
+
+            if (deleteKey != 'Error'):
+                return HTTPResponse("The client data was successfully transfered")
+            else:
+                return HTTPResponse("There was an error while trying to delete the key")
+        else:
+            return HTTPResponse("There was an error while trying to insert the document")
