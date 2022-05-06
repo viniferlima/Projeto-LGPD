@@ -7,6 +7,7 @@ from hashlib import algorithms_available
 import json
 from django.http import JsonResponse
 from matplotlib.font_manager import json_load
+from numpy import true_divide
 import pymongo
 import time
 from cryptography.fernet import Fernet
@@ -197,17 +198,28 @@ class Model():
         cluster = Model.createConnectionDBPortability()
         db = cluster['DataPortability']
         collection = db['client']
-
+        session = cluster.start_session(causal_consistency=True)
+        
         client = Model.find_user(cpf_user)
 
-        insertClient =  collection.insert_one(client)
+        if(client != NULL):
+            session.start_transaction()
+            try:
+                insertClient =  collection.insert_one(client, session=session)
 
-        if (insertClient.acknowledged):
-            deleteKey = Model.key_delete(cpf_user)
+                if (insertClient.acknowledged):
+                    deleteKey = Model.key_delete(cpf_user)
 
-            if (deleteKey != 'Error'):
-                return HTTPResponse("The client data was successfully transfered")
-            else:
-                return HTTPResponse("There was an error while trying to delete the key")
-        else:
-            return HTTPResponse("There was an error while trying to insert the document")
+                    if (deleteKey != 'Error'):
+                        return HTTPResponse("The client data was successfully transfered")
+                    else:
+                        return HTTPResponse("There was an error while trying to delete the key")
+                else:
+                    return HTTPResponse("There was an error while trying to insert the document")
+
+            except:
+                session.abort_transaction()
+            else: 
+                session.commit_transaction()
+            finally:
+                session.end_session()
