@@ -208,6 +208,7 @@ class Model():
                 insertClient =  collection.insert_one(client, session=session)
 
                 if (insertClient.acknowledged):
+                    session.commit_transaction()
                     deleteKey = Model.key_delete(cpf_user)
 
                     if (deleteKey != 'Error'):
@@ -219,7 +220,5 @@ class Model():
 
             except:
                 session.abort_transaction()
-            else: 
-                session.commit_transaction()
             finally:
                 session.end_session()
