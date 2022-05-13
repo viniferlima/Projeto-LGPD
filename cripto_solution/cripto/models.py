@@ -1,11 +1,16 @@
 from asyncio.windows_events import NULL
 from http.client import HTTPResponse
 from pickle import FALSE, TRUE
+from sre_constants import SUCCESS
+import ssl
+from telnetlib import TLS
+from tkinter.tix import Tree
 from urllib import request
+from django import http
 from django.db import models
 from hashlib import algorithms_available
 import json
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from matplotlib.font_manager import json_load
 from numpy import true_divide
 import pymongo
@@ -15,20 +20,30 @@ from pymongo import MongoClient
 from Crypto.Cipher import AES
 import uuid 
 import base64, os
+from django.views.decorators.csrf import csrf_exempt
+import certifi
 
 class Model():
 
     def createConnectionDB():
-        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/TopicosAvançados?retryWrites=true&w=majority")
+        return pymongo.MongoClient("mongodb://localhost:27017/")
+        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/TopicosAvançados?retryWrites=true&w=majority
 
     def createConnectionDBKeys():
-        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/Keys?retryWrites=true&w=majority")
+        return pymongo.MongoClient("mongodb://localhost:27017/")
+        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/Keys?retryWrites=true&w=majority
 
+    
     def createConnectionDBPortability():
-        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/DataPortability?retryWrites=true&w=majority", 
-        ssl=True,
-        ssl_certfile='selfsigned.crt',
-        ssl_keyfile='private.key')
+        ca = certifi.where()
+        return pymongo.MongoClient("mongodb://localhost:27017/ssl=true&sslAllowInvalidCertificates=true"
+    
+        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/DataPortability?retryWrites=true&w=majority
+        ##ssl = True,
+        ##ssl_certfile='selfsigned.crt',
+        #ssl_keyfile='private.key')
+        )
+        
 
     def generate_secret_key_for_AES_cipher():
         # AES key length must be either 16, 24, or 32 bytes long
@@ -160,8 +175,14 @@ class Model():
             crypto_data = Model.decrypt(crypto_key,data)
             decrypto_array.append(crypto_data)
 
-        request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
+        ##request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
 
+    
+        request = {"nome_cli":decrypto_array[0],
+                    "telefone_cli": decrypto_array[1], 
+                    "email_cli": decrypto_array[2], 
+                    "cpf_cli": decrypto_array[3],
+                    "id_chave":id_chave}
         if request:
          return request
         else:
@@ -190,24 +211,28 @@ class Model():
         db = cluster['Keys']
         collection = db['CryptoKey']
 
-        result = collection.delete_one({"cli_cpf":cpf_user})
-
-        return print("Key deleted from database")         
+        result = collection.delete_one({"cpf_client":cpf_user})
+        if(result.deleted_count == 1):
+            return ("SUCCESS")
+        else:
+            return("Error")
 
     def client_data_portability(cpf_user):
         cluster = Model.createConnectionDBPortability()
         db = cluster['DataPortability']
         collection = db['client']
-        session = cluster.start_session(causal_consistency=True)
+        #session = cluster.start_session(causal_consistency=True)
         
         client = Model.find_user(cpf_user)
+        print(client)
 
         if(client != NULL):
-            session.start_transaction()
+         #   session.start_transaction()
             try:
-                insertClient =  collection.insert_one(client, session=session)
-
+                insertClient =  collection.insert_one(client)#, session=session
+                print(insertClient)
                 if (insertClient.acknowledged):
+                   # session.commit_transaction()
                     deleteKey = Model.key_delete(cpf_user)
 
                     if (deleteKey != 'Error'):
@@ -218,8 +243,9 @@ class Model():
                     return HTTPResponse("There was an error while trying to insert the document")
 
             except:
-                session.abort_transaction()
-            else: 
-                session.commit_transaction()
-            finally:
-                session.end_session()
+                return ("")
+               # session.abort_transaction()
+           # finally:
+               # session.end_session()
+
+                #return HttpResponse("n porto")
