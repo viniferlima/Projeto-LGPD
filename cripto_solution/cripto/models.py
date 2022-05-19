@@ -183,12 +183,12 @@ class Model():
                     "email_cli": decrypto_array[2], 
                     "cpf_cli": decrypto_array[3],
                     "id_chave":id_chave}
-        json_dump = json.dumps(request)
-        print(json_dump) 
-        json_object = json.loads(request)
+        # json_dump = json.dumps(request)
+        # print(json_dump) 
+        # json_object = json(request)
 
         if request != None:
-         return request
+            return str(request)
         else:
          return JsonResponse({"message" : "User doesnt found."}, status=200)
 
