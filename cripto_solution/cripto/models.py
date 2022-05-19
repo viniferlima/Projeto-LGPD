@@ -80,7 +80,6 @@ class Model():
         collection = db['CryptoKey']
 
         result = collection.find_one({"cpf_cli":cpf_cli})
-        print(result)
         if result == NULL:
             return FALSE
         return result
@@ -150,6 +149,7 @@ class Model():
     
     def find_user(cpf_user):
         json_key = Model.key_find(cpf_user)
+        print(json_key)
         id_chave = json_key['id']
         crypto_key = json_key['chave']
         print("Chave ID na Chave:")
@@ -222,15 +222,15 @@ class Model():
         db = cluster['DataPortability']
         collection = db['client']
         #session = cluster.start_session(causal_consistency=True)
+
+        
         
         client = Model.find_user(cpf_user)
-        print(client)
 
         if(client != NULL):
          #   session.start_transaction()
             try:
                 insertClient =  collection.insert_one(client)#, session=session
-                print(insertClient)
                 if (insertClient.acknowledged):
                    # session.commit_transaction()
                     deleteKey = Model.key_delete(cpf_user)
