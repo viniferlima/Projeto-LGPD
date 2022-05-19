@@ -175,7 +175,7 @@ class Model():
             crypto_data = Model.decrypt(crypto_key,data)
             decrypto_array.append(crypto_data)
 
-        ##request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
+        #request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
 
     
         request = {"nome_cli":decrypto_array[0],
@@ -183,7 +183,11 @@ class Model():
                     "email_cli": decrypto_array[2], 
                     "cpf_cli": decrypto_array[3],
                     "id_chave":id_chave}
-        if request:
+        json_dump = json.dumps(request)
+        print(json_dump) 
+        json_object = json.loads(request)
+
+        if request != None:
          return request
         else:
          return JsonResponse({"message" : "User doesnt found."}, status=200)
