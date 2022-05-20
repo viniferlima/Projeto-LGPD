@@ -71,8 +71,9 @@ class Model():
         cryptor = AES.new(crypto_key.encode("utf8"), AES.MODE_CBC, IV.encode("utf8"))
 
         plain_text = cryptor.decrypt(decode)
-
-        return unpad(plain_text)
+        sus = unpad(plain_text)
+        print(sus)
+        return sus
 
     def key_verification(cpf_cli):
         cluster = Model.createConnectionDBKeys()
@@ -166,11 +167,14 @@ class Model():
         decrypto_array = []
 
         for data in encrypto_array:
-            crypto_data = Model.decrypt(crypto_key,data)
+            crypto_data = Model.decrypt(crypto_key,data).decode("utf-8")
             decrypto_array.append(crypto_data)
+        for data in decrypto_array:
+            print(data)
 
-        request = ["Nome: ",decrypto_array[0].decode("utf-8")," - Telefone: ",decrypto_array[1].decode("utf-8"), " - Email: ",decrypto_array[2].decode("utf-8"), " - CPF: ",decrypto_array[3].decode("utf-8")]
-
+        #request = ["Nome: ",decrypto_array[0].decode("utf-8")," - Telefone: ",decrypto_array[1].decode("utf-8"), " - Email: ",decrypto_array[2].decode("utf-8"), " - CPF: ",decrypto_array[3].decode("utf-8")]
+        request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
+        
         json_data = json.dumps(request)
         
         if request != None:

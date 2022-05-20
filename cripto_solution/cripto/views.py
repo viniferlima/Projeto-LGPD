@@ -82,7 +82,7 @@ def add_new_user(request):
                 print(data)
 
             for data in decrypto_array:
-                crypto_data = Model.encrypt(crypto_key,data)
+                crypto_data = Model.encrypt(crypto_key,data).decode("utf-8")
                 crypto_array.append(crypto_data)
             
             request = {"nome_cli":crypto_array[0],
