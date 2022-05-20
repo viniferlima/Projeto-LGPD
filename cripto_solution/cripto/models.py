@@ -149,19 +149,13 @@ class Model():
     
     def find_user(cpf_user):
         json_key = Model.key_find(cpf_user)
-        print(json_key)
         id_chave = json_key['id']
         crypto_key = json_key['chave']
-        print("Chave ID na Chave:")
-        print(id_chave)
-        print(crypto_key)
 
         clusterUser = Model.createConnectionDB()
         dbUser = clusterUser['TopicosAvançados']
         collectionUser = dbUser['Cliente']
         user =  collectionUser.find_one({"id_chave":id_chave})
-        print("Chave ID no User:")
-        print(user['id_chave'])
 
         name = user['nome_cli']
         tefelone = user['telefone_cli']
@@ -175,20 +169,12 @@ class Model():
             crypto_data = Model.decrypt(crypto_key,data)
             decrypto_array.append(crypto_data)
 
-        #request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
+        request = ["Nome: ",decrypto_array[0].decode("utf-8")," - Telefone: ",decrypto_array[1].decode("utf-8"), " - Email: ",decrypto_array[2].decode("utf-8"), " - CPF: ",decrypto_array[3].decode("utf-8")]
 
-    
-        request = {"nome_cli":decrypto_array[0],
-                    "telefone_cli": decrypto_array[1], 
-                    "email_cli": decrypto_array[2], 
-                    "cpf_cli": decrypto_array[3],
-                    "id_chave":id_chave}
-        # json_dump = json.dumps(request)
-        # print(json_dump) 
-        # json_object = json(request)
-
+        json_data = json.dumps(request)
+        
         if request != None:
-            return str(request)
+            return json_data
         else:
          return JsonResponse({"message" : "User doesnt found."}, status=200)
 
@@ -228,11 +214,14 @@ class Model():
         #session = cluster.start_session(causal_consistency=True)
 
         
-        
         client = Model.find_user(cpf_user)
+        client = json.loads(client)
+        print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+        print(client)
 
         if(client != NULL):
          #   session.start_transaction()
+
             try:
                 insertClient =  collection.insert_one(client)#, session=session
                 if (insertClient.acknowledged):
