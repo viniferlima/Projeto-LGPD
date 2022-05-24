@@ -1,5 +1,6 @@
 from asyncio.windows_events import NULL
-from http.client import HTTPResponse
+#from http.client import HTTPResponse
+from django.http.response import HttpResponse
 from pickle import FALSE, TRUE
 from sre_constants import SUCCESS
 import ssl
@@ -119,7 +120,7 @@ class Model():
                     "qtd_venda": qtd,
                    "idCli": id_cli}
             collectionVendaSimples.insert_one(requestVendaSimples)
-        return HTTPResponse("Tabela Particionada") 
+        return HttpResponse("Tabela Particionada") 
                               
     def insert_sale_old(request):
         cluster = Model.createConnectionDB()
@@ -173,12 +174,12 @@ class Model():
             print(data)
 
         #request = ["Nome: ",decrypto_array[0].decode("utf-8")," - Telefone: ",decrypto_array[1].decode("utf-8"), " - Email: ",decrypto_array[2].decode("utf-8"), " - CPF: ",decrypto_array[3].decode("utf-8")]
-        request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
+        request = {"Nome: ":decrypto_array[0]," - Telefone: ":decrypto_array[1], " - Email: ":decrypto_array[2], " - CPF: ":decrypto_array[3]}
         
-        json_data = json.dumps(request)
+       # json_data = json.dumps(request)
         
         if request != None:
-            return json_data
+            return request #json_data
         else:
          return JsonResponse({"message" : "User doesnt found."}, status=200)
 
@@ -218,10 +219,13 @@ class Model():
         #session = cluster.start_session(causal_consistency=True)
 
         
+
         client = Model.find_user(cpf_user)
-        client = json.loads(client)
-        print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
         print(client)
+        print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+      ##  client = json.loads(client)
+      ##  print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+##print(client)
 
         if(client != NULL):
          #   session.start_transaction()
@@ -233,11 +237,11 @@ class Model():
                     deleteKey = Model.key_delete(cpf_user)
 
                     if (deleteKey != 'Error'):
-                        return HTTPResponse("The client data was successfully transfered")
+                        return HttpResponse("The client data was successfully transfered")
                     else:
-                        return HTTPResponse("There was an error while trying to delete the key")
+                        return HttpResponse("There was an error while trying to delete the key")
                 else:
-                    return HTTPResponse("There was an error while trying to insert the document")
+                    return HttpResponse("There was an error while trying to insert the document")
 
             except:
                 return ("")

@@ -39,7 +39,7 @@ def all_data_insert_sale(request):
             crypto_array = []
 
             for data in decrypto_array:
-                crypto_data = Model.encrypt(crypto_key,data)
+                crypto_data = Model.encrypt(crypto_key,data).decode("utf-8")
                 crypto_array.append(crypto_data)
             
             request = {"produto_venda":produto,
@@ -112,7 +112,7 @@ def find_user(request, cpf):
 
 def Split_Venda(request):
     if request.method == "POST":
-        return Model.Split_Sale()
+        return HttpResponse(Model.Split_Sale())
 
     return JsonResponse({"message":"Venda Efetuada."}, status=500) 
 
