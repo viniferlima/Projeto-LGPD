@@ -1,4 +1,6 @@
 from asyncio.windows_events import NULL
+from cgi import print_arguments
+from unittest import result
 #from http.client import HTTPResponse
 from django.http.response import HttpResponse
 from pickle import FALSE, TRUE
@@ -17,7 +19,8 @@ from numpy import true_divide
 import pymongo
 import time
 from cryptography.fernet import Fernet
-from pymongo import MongoClient
+from pymongo import MongoClient, InsertOne, DeleteOne
+from pymongo.errors import BulkWriteError
 from Crypto.Cipher import AES
 import uuid 
 import base64, os
@@ -73,7 +76,6 @@ class Model():
 
         plain_text = cryptor.decrypt(decode)
         sus = unpad(plain_text)
-        print(sus)
         return sus
 
     def key_verification(cpf_cli):
@@ -170,8 +172,7 @@ class Model():
         for data in encrypto_array:
             crypto_data = Model.decrypt(crypto_key,data).decode("utf-8")
             decrypto_array.append(crypto_data)
-        for data in decrypto_array:
-            print(data)
+        
 
         #request = ["Nome: ",decrypto_array[0].decode("utf-8")," - Telefone: ",decrypto_array[1].decode("utf-8"), " - Email: ",decrypto_array[2].decode("utf-8"), " - CPF: ",decrypto_array[3].decode("utf-8")]
         request = {"Nome: ":decrypto_array[0]," - Telefone: ":decrypto_array[1], " - Email: ":decrypto_array[2], " - CPF: ":decrypto_array[3]}
@@ -213,40 +214,33 @@ class Model():
             return("Error")
 
     def client_data_portability(cpf_user):
-        cluster = Model.createConnectionDBPortability()
-        db = cluster['DataPortability']
-        collection = db['client']
-        #session = cluster.start_session(causal_consistency=True)
+        clusterPortability = Model.createConnectionDBPortability()
+        dbPortability = clusterPortability['DataPortability']
+        collectionPortability = dbPortability['client']
+        clusterKeys = Model.createConnectionDBKeys()
+        dbKeys = clusterKeys['Keys']
+        collectionKeys = dbKeys['CryptoKey']
 
-        
 
         client = Model.find_user(cpf_user)
-        print(client)
-        print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-      ##  client = json.loads(client)
-      ##  print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-##print(client)
 
         if(client != NULL):
-         #   session.start_transaction()
 
-            try:
-                insertClient =  collection.insert_one(client)#, session=session
-                if (insertClient.acknowledged):
-                   # session.commit_transaction()
-                    deleteKey = Model.key_delete(cpf_user)
+            try :
+                requests = [InsertOne(client)]
+                collectionPortability.bulk_write(requests)
+                try:  
+                    requestsDelete = [ DeleteOne({'cpf_client':cpf_user})]
+                    collectionKeys.bulk_write(requestsDelete)
+                    return HttpResponse("The client data was successfully transfered")
+                except BulkWriteError as bwe:
+                    print(bwe.details)
+                    return HttpResponse("There was an error while trying to perform deletion")      
+                
+            except BulkWriteError as bwe:
+                print(bwe.details)
+                return HttpResponse("There was an error while trying to perform insertion")      
+                        
 
-                    if (deleteKey != 'Error'):
-                        return HttpResponse("The client data was successfully transfered")
-                    else:
-                        return HttpResponse("There was an error while trying to delete the key")
-                else:
-                    return HttpResponse("There was an error while trying to insert the document")
-
-            except:
-                return ("")
-               # session.abort_transaction()
-           # finally:
-               # session.end_session()
-
-                #return HttpResponse("n porto")
+        else:    
+            return HttpResponse("The client data was not transfered")
