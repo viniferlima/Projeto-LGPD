@@ -14,15 +14,11 @@ from django.http import HttpRequest,HttpResponse,JsonResponse
 @csrf_exempt
 def all_data_insert_sale(request):
     if request.method == "POST":
-        with open("C:/Users/Mars/OneDrive - Mars Inc/Área de Trabalho/lgpd/cripto_solution/cripto/temp.json", "r") as infile:
+        with open("C:/Users/USUARIO/Desktop/materia do sakaue/lgpd/cripto_solution/cripto/temp.json", "r") as infile:
             datas = json.loads(infile.read())
         print(datas)
         for data in datas:
-            print("document:")
-            print(data)
             crypto_key = Model.generate_secret_key_for_AES_cipher()
-            print("Chave: ")
-            print(crypto_key)
 
             #dados = json.loads(str(data))
             produto = data["produto_venda"]
@@ -43,11 +39,8 @@ def all_data_insert_sale(request):
             crypto_array = []
 
             for data in decrypto_array:
-                print(data)
-
-        for data in decrypto_array:
-            crypto_data = Model.encrypt(crypto_key,data)
-            crypto_array.append(crypto_data)
+                crypto_data = Model.encrypt(crypto_key,data).decode("utf-8")
+                crypto_array.append(crypto_data)
             
             request = {"produto_venda":produto,
                         "valor_venda":valor,
@@ -89,7 +82,7 @@ def add_new_user(request):
                 print(data)
 
             for data in decrypto_array:
-                crypto_data = Model.encrypt(crypto_key,data)
+                crypto_data = Model.encrypt(crypto_key,data).decode("utf-8")
                 crypto_array.append(crypto_data)
             
             request = {"nome_cli":crypto_array[0],
@@ -104,7 +97,9 @@ def add_new_user(request):
 
 def delete_user(request,cpf):
     if request.method == "DELETE":
-        return Model.key_delete(cpf)
+        newcpf = str(cpf)
+        Model.key_delete(newcpf)
+        return HttpResponse("key deleted")
 
     return JsonResponse({"message":"Erro na requisição. Método esperado: DELETE."}, status=500) 
 
@@ -117,13 +112,15 @@ def find_user(request, cpf):
 
 def Split_Venda(request):
     if request.method == "POST":
-        return Model.Split_Sale()
+        return HttpResponse(Model.Split_Sale())
 
     return JsonResponse({"message":"Venda Efetuada."}, status=500) 
 
-def client_data_portability(request):
+def client_data_portability(request, cpf):
+    
     if request.method == "POST":
-        return Model.client_data_portability()
+       return Model.client_data_portability(cpf)
+        
 
     return JsonResponse({"message":"Erro na requisição. Método esperado: POST."}, status=500)     
 

@@ -1,34 +1,53 @@
 from asyncio.windows_events import NULL
-from http.client import HTTPResponse
+from cgi import print_arguments
+from unittest import result
+#from http.client import HTTPResponse
+from django.http.response import HttpResponse
 from pickle import FALSE, TRUE
+from sre_constants import SUCCESS
+import ssl
+from telnetlib import TLS
+from tkinter.tix import Tree
 from urllib import request
+from django import http
 from django.db import models
 from hashlib import algorithms_available
 import json
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from matplotlib.font_manager import json_load
 from numpy import true_divide
 import pymongo
 import time
 from cryptography.fernet import Fernet
-from pymongo import MongoClient
+from pymongo import MongoClient, InsertOne, DeleteOne
+from pymongo.errors import BulkWriteError
 from Crypto.Cipher import AES
 import uuid 
 import base64, os
+from django.views.decorators.csrf import csrf_exempt
+import certifi
 
 class Model():
 
     def createConnectionDB():
-        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/TopicosAvançados?retryWrites=true&w=majority")
+        return pymongo.MongoClient("mongodb://localhost:27017/")
+        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/TopicosAvançados?retryWrites=true&w=majority
 
     def createConnectionDBKeys():
-        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/Keys?retryWrites=true&w=majority")
+        return pymongo.MongoClient("mongodb://localhost:27017/")
+        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/Keys?retryWrites=true&w=majority
 
+    
     def createConnectionDBPortability():
-        return pymongo.MongoClient("mongodb+srv://system:system@cluster0.tafgc.mongodb.net/DataPortability?retryWrites=true&w=majority", 
-        ssl=True,
-        ssl_certfile='selfsigned.crt',
-        ssl_keyfile='private.key')
+        ca = certifi.where()
+        return pymongo.MongoClient("mongodb://localhost:27017/ssl=true&sslAllowInvalidCertificates=true"
+    
+        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/DataPortability?retryWrites=true&w=majority
+        ##ssl = True,
+        ##ssl_certfile='selfsigned.crt',
+        #ssl_keyfile='private.key')
+        )
+        
 
     def generate_secret_key_for_AES_cipher():
         # AES key length must be either 16, 24, or 32 bytes long
@@ -56,8 +75,8 @@ class Model():
         cryptor = AES.new(crypto_key.encode("utf8"), AES.MODE_CBC, IV.encode("utf8"))
 
         plain_text = cryptor.decrypt(decode)
-
-        return unpad(plain_text)
+        sus = unpad(plain_text)
+        return sus
 
     def key_verification(cpf_cli):
         cluster = Model.createConnectionDBKeys()
@@ -65,7 +84,6 @@ class Model():
         collection = db['CryptoKey']
 
         result = collection.find_one({"cpf_cli":cpf_cli})
-        print(result)
         if result == NULL:
             return FALSE
         return result
@@ -104,7 +122,7 @@ class Model():
                     "qtd_venda": qtd,
                    "idCli": id_cli}
             collectionVendaSimples.insert_one(requestVendaSimples)
-        return HTTPResponse("Tabela Particionada") 
+        return HttpResponse("Tabela Particionada") 
                               
     def insert_sale_old(request):
         cluster = Model.createConnectionDB()
@@ -137,16 +155,11 @@ class Model():
         json_key = Model.key_find(cpf_user)
         id_chave = json_key['id']
         crypto_key = json_key['chave']
-        print("Chave ID na Chave:")
-        print(id_chave)
-        print(crypto_key)
 
         clusterUser = Model.createConnectionDB()
         dbUser = clusterUser['TopicosAvançados']
         collectionUser = dbUser['Cliente']
         user =  collectionUser.find_one({"id_chave":id_chave})
-        print("Chave ID no User:")
-        print(user['id_chave'])
 
         name = user['nome_cli']
         tefelone = user['telefone_cli']
@@ -157,13 +170,17 @@ class Model():
         decrypto_array = []
 
         for data in encrypto_array:
-            crypto_data = Model.decrypt(crypto_key,data)
+            crypto_data = Model.decrypt(crypto_key,data).decode("utf-8")
             decrypto_array.append(crypto_data)
+        
 
-        request = ["Nome: ",decrypto_array[0]," - Telefone: ",decrypto_array[1], " - Email: ",decrypto_array[2], " - CPF: ",decrypto_array[3]]
-
-        if request:
-         return request
+        #request = ["Nome: ",decrypto_array[0].decode("utf-8")," - Telefone: ",decrypto_array[1].decode("utf-8"), " - Email: ",decrypto_array[2].decode("utf-8"), " - CPF: ",decrypto_array[3].decode("utf-8")]
+        request = {"Nome: ":decrypto_array[0]," - Telefone: ":decrypto_array[1], " - Email: ":decrypto_array[2], " - CPF: ":decrypto_array[3]}
+        
+       # json_data = json.dumps(request)
+        
+        if request != None:
+            return request #json_data
         else:
          return JsonResponse({"message" : "User doesnt found."}, status=200)
 
@@ -190,35 +207,40 @@ class Model():
         db = cluster['Keys']
         collection = db['CryptoKey']
 
-        result = collection.delete_one({"cli_cpf":cpf_user})
-
-        return print("Key deleted from database")         
+        result = collection.delete_one({"cpf_client":cpf_user})
+        if(result.deleted_count == 1):
+            return ("SUCCESS")
+        else:
+            return("Error")
 
     def client_data_portability(cpf_user):
-        cluster = Model.createConnectionDBPortability()
-        db = cluster['DataPortability']
-        collection = db['client']
-        session = cluster.start_session(causal_consistency=True)
-        
+        clusterPortability = Model.createConnectionDBPortability()
+        dbPortability = clusterPortability['DataPortability']
+        collectionPortability = dbPortability['client']
+        clusterKeys = Model.createConnectionDBKeys()
+        dbKeys = clusterKeys['Keys']
+        collectionKeys = dbKeys['CryptoKey']
+
+
         client = Model.find_user(cpf_user)
 
         if(client != NULL):
-            session.start_transaction()
-            try:
-                insertClient =  collection.insert_one(client, session=session)
 
-                if (insertClient.acknowledged):
-                    session.commit_transaction()
-                    deleteKey = Model.key_delete(cpf_user)
+            try :
+                requests = [InsertOne(client)]
+                collectionPortability.bulk_write(requests)
+                try:  
+                    requestsDelete = [ DeleteOne({'cpf_client':cpf_user})]
+                    collectionKeys.bulk_write(requestsDelete)
+                    return HttpResponse("The client data was successfully transfered")
+                except BulkWriteError as bwe:
+                    print(bwe.details)
+                    return HttpResponse("There was an error while trying to perform deletion")      
+                
+            except BulkWriteError as bwe:
+                print(bwe.details)
+                return HttpResponse("There was an error while trying to perform insertion")      
+                        
 
-                    if (deleteKey != 'Error'):
-                        return HTTPResponse("The client data was successfully transfered")
-                    else:
-                        return HTTPResponse("There was an error while trying to delete the key")
-                else:
-                    return HTTPResponse("There was an error while trying to insert the document")
-
-            except:
-                session.abort_transaction()
-            finally:
-                session.end_session()
+        else:    
+            return HttpResponse("The client data was not transfered")
