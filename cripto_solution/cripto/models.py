@@ -1,42 +1,24 @@
 from asyncio.windows_events import NULL
-from cgi import print_arguments
-from unittest import result
-#from http.client import HTTPResponse
 from django.http.response import HttpResponse
 from pickle import FALSE, TRUE
-from sre_constants import SUCCESS
-import ssl
-from telnetlib import TLS
-from tkinter.tix import Tree
-from urllib import request
-from django import http
-from django.db import models
-from hashlib import algorithms_available
 import json
 from django.http import HttpResponse, JsonResponse
-from matplotlib.font_manager import json_load
-from numpy import true_divide
 import pymongo
-import time
-from cryptography.fernet import Fernet
 from pymongo import MongoClient, InsertOne, DeleteOne
 from pymongo.errors import BulkWriteError
 from Crypto.Cipher import AES
 import uuid 
 import base64, os
-from django.views.decorators.csrf import csrf_exempt
 import certifi
+from .mongo_connection import Mongo_Connection
 
 class Model():
 
     def createConnectionDB():
         return pymongo.MongoClient("mongodb://localhost:27017/")
-        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/TopicosAvançados?retryWrites=true&w=majority
 
     def createConnectionDBKeys():
         return pymongo.MongoClient("mongodb://localhost:27017/")
-        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/Keys?retryWrites=true&w=majority
-
     
     def createConnectionDBPortability():
         ca = certifi.where()
@@ -48,7 +30,6 @@ class Model():
         #ssl_keyfile='private.key')
         )
         
-
     def generate_secret_key_for_AES_cipher():
         # AES key length must be either 16, 24, or 32 bytes long
         AES_key_length = 12 # use larger value in production
@@ -73,29 +54,26 @@ class Model():
         decode = base64.b64decode(text)
         IV = "1234567890123456"
         cryptor = AES.new(crypto_key.encode("utf8"), AES.MODE_CBC, IV.encode("utf8"))
-
         plain_text = cryptor.decrypt(decode)
-        sus = unpad(plain_text)
-        return sus
+
+        return unpad(plain_text)
 
     def key_verification(cpf_cli):
-        cluster = Model.createConnectionDBKeys()
-        db = cluster['Keys']
-        collection = db['CryptoKey']
-
+        collection = Mongo_Connection.createConnectionDBKeys()
         result = collection.find_one({"cpf_cli":cpf_cli})
+        
         if result == NULL:
-            return FALSE
+            return None
         return result
 
     def Split_Sale():
-        cluster = Model.createConnectionDB()
-        db = cluster['TopicosAvançados']
-        collectionVenda = db['Vendas']
+        collectionVenda = Mongo_Connection.createConnectionDB('Vendas')
+        collectionCli = Mongo_Connection.createConnectionDB('Cliente')
+        collectionVendaSimples = Mongo_Connection.createConnectionDB('VendaSimples')
+
         VendasSeparadas = []
         VendasSeparadas = collectionVenda.find({})
-        collectionCli = db['Cliente']
-        collectionVendaSimples = db['VendaSimples']
+
         for dado in VendasSeparadas:
             id = dado['_id']
             produto = dado['produto_venda']
@@ -125,107 +103,83 @@ class Model():
         return HttpResponse("Tabela Particionada") 
                               
     def insert_sale_old(request):
-        cluster = Model.createConnectionDB()
-        db = cluster['TopicosAvançados']
-        collection = db['Vendas']
-
-        result =  collection.insert_one(request)
+        collection = Mongo_Connection.createConnectionDB('Vendas')
+        collection.insert_one(request)
 
         return print("Sale and user data added in the database")    
 
     def insert_sale(request):
-        cluster = Model.createConnectionDB()
-        db = cluster['TopicosAvançados']
-        collection = db['VendaSimples']
-
-        result =  collection.insert_one(json.loads(request.body))
+        collection = Mongo_Connection.createConnectionDB('VendaSimples')
+        collection.insert_one(json.loads(request))
 
         return print("Sale added in the database")
 
     def insert_user(request):
-        cluster = Model.createConnectionDB()
-        db = cluster['TopicosAvançados']
-        collection = db['Cliente']
-
-        result =  collection.insert_one(request)
+        collection = Mongo_Connection.createConnectionDB('Cliente')
+        result = collection.insert_one(request)
         
-        return print("User added in the database")
+        if(result.inserted_id) != None:
+            return print("User added in the database")
+        else:
+            return print("Error to insert user")
     
     def find_user(cpf_user):
         json_key = Model.key_find(cpf_user)
-        id_chave = json_key['id']
-        crypto_key = json_key['chave']
+        if json_key != None:
+            id_chave = json_key['id']
+            crypto_key = json_key['chave']
 
-        clusterUser = Model.createConnectionDB()
-        dbUser = clusterUser['TopicosAvançados']
-        collectionUser = dbUser['Cliente']
-        user =  collectionUser.find_one({"id_chave":id_chave})
+            collectionUser = Mongo_Connection.createConnectionDB('Cliente')
+            user =  collectionUser.find_one({"id_chave":id_chave})
+            name = user['nome_cli']
+            tefelone = user['telefone_cli']
+            email = user['email_cli']
+            cpf = user['cpf_cli']
 
-        name = user['nome_cli']
-        tefelone = user['telefone_cli']
-        email = user['email_cli']
-        cpf = user['cpf_cli']
+            encrypto_array = [name,tefelone,email,cpf]
+            decrypto_array = []
 
-        encrypto_array = [name,tefelone,email,cpf]
-        decrypto_array = []
-
-        for data in encrypto_array:
-            crypto_data = Model.decrypt(crypto_key,data).decode("utf-8")
-            decrypto_array.append(crypto_data)
-        
-
-        #request = ["Nome: ",decrypto_array[0].decode("utf-8")," - Telefone: ",decrypto_array[1].decode("utf-8"), " - Email: ",decrypto_array[2].decode("utf-8"), " - CPF: ",decrypto_array[3].decode("utf-8")]
-        request = {"Nome: ":decrypto_array[0]," - Telefone: ":decrypto_array[1], " - Email: ":decrypto_array[2], " - CPF: ":decrypto_array[3]}
-        
-       # json_data = json.dumps(request)
-        
-        if request != None:
-            return request #json_data
+            for data in encrypto_array:
+                crypto_data = Model.decrypt(crypto_key,data).decode("utf-8")
+                decrypto_array.append(crypto_data)
+            
+            request = {"Nome: ":decrypto_array[0],"Telefone: ":decrypto_array[1], "Email: ":decrypto_array[2], "CPF: ":decrypto_array[3]}
+            
+            return json.loads(request) 
         else:
-         return JsonResponse({"message" : "User doesnt found."}, status=200)
+         return ("User doesnt found.")
 
     def key_insert(key):
-        cluster = Model.createConnectionDBKeys()
-        db = cluster['Keys']
-        collection = db['CryptoKey'] 
-
+        collection = Mongo_Connection.createConnectionDBKeys()
         result = collection.insert_one(key)
 
-        return print("Key added from database")
+        if(result.inserted_id) != None:
+            return print("Key added from database")
+        else:
+            return print("Error to insert key")
 
     def key_find(cpf_user):
-        cluster = Model.createConnectionDBKeys()
-        db = cluster['Keys']
-        collection = db['CryptoKey']
-
+        collection = Mongo_Connection.createConnectionDBKeys()
         result = collection.find_one({"cpf_client":cpf_user})
 
         return result         
 
     def key_delete(cpf_user):
-        cluster = Model.createConnectionDBKeys()
-        db = cluster['Keys']
-        collection = db['CryptoKey']
+        collection = Mongo_Connection.createConnectionDBKeys()
 
         result = collection.delete_one({"cpf_client":cpf_user})
         if(result.deleted_count == 1):
-            return ("SUCCESS")
+            return HttpResponse("Key deleted")      
         else:
-            return("Error")
+            return HttpResponse("Fail to delete key")      
 
     def client_data_portability(cpf_user):
-        clusterPortability = Model.createConnectionDBPortability()
-        dbPortability = clusterPortability['DataPortability']
-        collectionPortability = dbPortability['client']
-        clusterKeys = Model.createConnectionDBKeys()
-        dbKeys = clusterKeys['Keys']
-        collectionKeys = dbKeys['CryptoKey']
-
+        collectionPortability = Mongo_Connection.createConnectionDBPortability()
+        collectionKeys = Mongo_Connection.createConnectionDBKeys()
 
         client = Model.find_user(cpf_user)
 
         if(client != NULL):
-
             try :
                 requests = [InsertOne(client)]
                 collectionPortability.bulk_write(requests)
@@ -235,12 +189,9 @@ class Model():
                     return HttpResponse("The client data was successfully transfered")
                 except BulkWriteError as bwe:
                     print(bwe.details)
-                    return HttpResponse("There was an error while trying to perform deletion")      
-                
+                    return HttpResponse("There was an error while trying to perform deletion")       
             except BulkWriteError as bwe:
                 print(bwe.details)
                 return HttpResponse("There was an error while trying to perform insertion")      
-                        
-
         else:    
             return HttpResponse("The client data was not transfered")
