@@ -12,24 +12,7 @@ import base64, os
 import certifi
 from .mongo_connection import Mongo_Connection
 
-class Model():
-
-    def createConnectionDB():
-        return pymongo.MongoClient("mongodb://localhost:27017/")
-
-    def createConnectionDBKeys():
-        return pymongo.MongoClient("mongodb://localhost:27017/")
-    
-    def createConnectionDBPortability():
-        ca = certifi.where()
-        return pymongo.MongoClient("mongodb://localhost:27017/ssl=true&sslAllowInvalidCertificates=true"
-    
-        ##mongodb+srv://system:system@cluster0.tafgc.mongodb.net/DataPortability?retryWrites=true&w=majority
-        ##ssl = True,
-        ##ssl_certfile='selfsigned.crt',
-        #ssl_keyfile='private.key')
-        )
-        
+class Model():       
     def generate_secret_key_for_AES_cipher():
         # AES key length must be either 16, 24, or 32 bytes long
         AES_key_length = 12 # use larger value in production
@@ -143,9 +126,9 @@ class Model():
                 crypto_data = Model.decrypt(crypto_key,data).decode("utf-8")
                 decrypto_array.append(crypto_data)
             
-            request = {"Nome: ":decrypto_array[0],"Telefone: ":decrypto_array[1], "Email: ":decrypto_array[2], "CPF: ":decrypto_array[3]}
+            request = {"Nome":decrypto_array[0],"Telefone":decrypto_array[1], "Email":decrypto_array[2], "CPF":decrypto_array[3]}
             
-            return json.loads(request) 
+            return request
         else:
          return ("User doesnt found.")
 
@@ -178,7 +161,7 @@ class Model():
         collectionKeys = Mongo_Connection.createConnectionDBKeys()
 
         client = Model.find_user(cpf_user)
-
+        print(client)
         if(client != NULL):
             try :
                 requests = [InsertOne(client)]

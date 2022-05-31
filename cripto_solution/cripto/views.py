@@ -102,7 +102,7 @@ def delete_user(request,cpf):
 def find_user(request, cpf):
     if request.method == "GET":
         result = Model.find_user(cpf)
-        return HttpResponse(result, status=500) 
+        return JsonResponse(result, status=500) 
         
     return JsonResponse({"message":"Erro na requisição. Método esperado: GET."}, status=500) 
 
