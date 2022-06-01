@@ -1,15 +1,8 @@
-from ast import If
-from doctest import FAIL_FAST
 import json
-from math import prod
-from pickle import FALSE
-import re
 from django.shortcuts import render
 from django.urls import path
-from matplotlib.font_manager import json_load
 from .models import Model
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpRequest,HttpResponse,JsonResponse
+from django.http import HttpResponse,JsonResponse
 
 def all_data_insert_sale(request):
     if request.method == "POST":
@@ -18,7 +11,6 @@ def all_data_insert_sale(request):
         for data in datas:
             crypto_key = Model.generate_secret_key_for_AES_cipher()
 
-            #dados = json.loads(str(data))
             produto = data["produto_venda"]
             valor = data["valor_venda"]
             qtd = data["qtd_venda"]
@@ -110,7 +102,7 @@ def Split_Venda(request):
     if request.method == "POST":
         return Model.Split_Sale()
 
-    return JsonResponse({"message":"Venda Efetuada."}, status=500) 
+    return JsonResponse({"message":"Erro na requisição. Método esperado: POST."}, status=500) 
 
 def client_data_portability(request, cpf):
     if request.method == "POST":

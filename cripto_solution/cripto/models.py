@@ -1,15 +1,12 @@
 from asyncio.windows_events import NULL
 from django.http.response import HttpResponse
-from pickle import FALSE, TRUE
 import json
-from django.http import HttpResponse, JsonResponse
-import pymongo
-from pymongo import MongoClient, InsertOne, DeleteOne
+from django.http import HttpResponse
+from pymongo import InsertOne, DeleteOne
 from pymongo.errors import BulkWriteError
 from Crypto.Cipher import AES
 import uuid 
 import base64, os
-import certifi
 from .mongo_connection import Mongo_Connection
 
 class Model():       
