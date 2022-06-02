@@ -72,15 +72,23 @@ class Model():
                     "email_cli": email, 
                     "cpf_cli": cpf,
                     "id_chave": idChave}
-            collectionCli.insert_one(requestCli)
 
             requestVendaSimples = {"_id":id,
                     "produto_venda": produto, 
                     "valor_venda": valor, 
                     "qtd_venda": qtd,
                    "idCli": id_cli}
-            collectionVendaSimples.insert_one(requestVendaSimples)
-        return HttpResponse("Tabela Particionada") 
+            try:
+                collectionCli.bulk_write([InsertOne(requestCli)])
+                try:
+                    collectionVendaSimples.bulk_write([InsertOne(requestVendaSimples)])
+                except:
+                    return HttpResponse("There was an error while trying to perform insertion")
+            except BulkWriteError as bwe: 
+                return HttpResponse("There was an error while trying to perform insertion")
+
+        return HttpResponse("Insert foi")
+
                               
     def insert_sale_old(request):
         collection = Mongo_Connection.createConnectionDB('Vendas')
