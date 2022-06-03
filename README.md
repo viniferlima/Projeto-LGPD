@@ -1,91 +1,182 @@
-# LGPD
+# Tópicos Avançados
+O projeto tem como proposta de desenvolver uma soluçao para problemas relacionados a LGPD.
 
-teste pra ver se é vdd q da pra subir coisas no gitlab sem login na maquina
+### Exclusão de Dados
+Hoje, para uma empresa realizar a exclusão do dado de um dos seus clientes existe um processo um pouco complicado, pois há empresas que tem inumeros backup dos dados em várias bases. Exclusão de dados de clientes é simplificada, pois para deletar esses dados do banco de dados de algumas empresas, esse processo precisa ser feito em dezenas ou centenas de backups.
+A criptografia auxilia na privatização desses dados.
 
-## Getting started
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### Particionamento
+O particionamento funciona da seguinte maneira, partimos da tabela "vendas", onde nela tinham tanto os dados da venda quanto do clinete que fez a venda, a partir do momento que particionamos essa tabela, separamos os dados da venda e do cliente, sendo assim possivel apagar os dados do cliente sem precisar apagar a venda.
+Para fazer isso foi necessário primeiro fazer pegar os dados da tabela "vendas", e após isso foi feito a separação dos dados. Com os dados que foram separados inserimos em outros 2 bancos.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+<a name="estrutura"></a>
+# Estrutura do Projeto
+## Diagrama de caso de uso:
+![Casos de uso](/Documentos/CasoUso1.png)
 
-## Add your files
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
+## Modelo do banco de dados:
+**CryptoKey**
+```json
+{
+  "_id": {
+    "$oid": "62993c873c933fa7e6706a6f"
+  },
+  "id": {
+    "$numberLong": "1509293973392"
+  },
+  "chave": "K5OLfuM/DmQ5bQphAxlGvtWqB8HqxX7m",
+  "cpf_client": "3574789"
+}
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/gof-webbot/lgpd.git
-git branch -M main
-git push -uf origin main
+
+**Client(Tabela Portabilizada)**
+```json
+{
+  "_id": {
+    "$oid": "62993da53c933fa7e6707442"
+  },
+  "Nome": "Deanna Vaughn",
+  "Telefone": "1-947-658-1423",
+  "Email": "non.massa@aol.net",
+  "CPF": "7866913"
+}
 ```
 
-## Integrate with your tools
+**Vendas(Tabela antes do particionamento)**
+```json
+{
+  "_id": {
+    "$oid": "62993c873c933fa7e6706a69"
+  },
+  "produto_venda": "enim. Etiam gravida molestie arcu. Sed eu nibh vulputate mauris",
+  "valor_venda": 99576,
+  "qtd_venda": 14907,
+  "idCli": "bab20b48541b40b698acd801cb387a71"
+}
+```
 
-- [ ] [Set up project integrations](https://gitlab.com/gof-webbot/lgpd/-/settings/integrations)
 
-## Collaborate with your team
+**Cliente(Tabela depois do particionamento)**
+```json
+{
+  "_id": {
+    "$oid": "62993ccc3c933fa7e6707239"
+  },
+  "id": "bab20b48541b40b698acd801cb387a71",
+  "nome_cli": "En+NXk0VcSekegz/dPh0CRSeNXws2Hhfs1aBKxQ9AZM=",
+  "telefone_cli": "oGAcP86TGsiAjme5Od7h43DI4J8WhYK4CdDo92lA2vg=",
+  "email_cli": "4QF1Tu97bmASRyNyBENlbfiPczI3nhFEfo3TQO3vamU=",
+  "cpf_cli": "bMKtl9cg8CxIdPt3yjSumWFwzplAOSDDcC+5JyDT3sU=",
+  "id_chave": {
+    "$numberLong": "1509293239536"
+  }
+}
+```
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+**VendaSimples(Tabela depois do particionamento)**
+```json
+{
+  "_id": {
+    "$oid": "62993c873c933fa7e6706a69"
+  },
+  "produto_venda": "enim. Etiam gravida molestie arcu. Sed eu nibh vulputate mauris",
+  "valor_venda": 99576,
+  "qtd_venda": 14907,
+  "idCli": "bab20b48541b40b698acd801cb387a71"
+}
+```
 
-## Test and Deploy
+## Documentação da API
+<details >
+<summary>
+<b>🟦GET</b>  /find_user/[CPF usuário]/ 
+</summary>
 
-Use the built-in continuous integration in GitLab.
+Busca uma vaga por id.
+<p>Response 200:</p>
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+``` json
+{
+    "Nome": "Alden Harper",
+    "Telefone": "1-998-995-1116",
+    "Email": "in@outlook.com",
+    "CPF": "6735596"
+}
+```
+</details>
 
-***
+<details>
+<summary>
+<b>🟩POST</b> /insert_user
+</summary>
+Insere uma vaga.
+<p>Exemplo de parâmetro:</p>
 
-# Editing this README
+``` json
+{"produto_venda":"elementum at,",
+"valor_venda":49510,
+"qtd_venda":31484,
+"nome_cli":"Deanna Vaughn",
+"telefone_cli":"1-947-658-1423",
+"cpf_cli":666222,
+"email_cli":"non.massa@aol.net"}
+```
+</details>
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+<details>
+<summary>
+<b>🟥DELETE</b> delete_user/6735596[CPF do usuário]
+</summary>
+Exclui a vaga baseada no parâmetro, caso encontrada.
+<p>Response 200:</p>
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+``` json
+{
+   "message": "Key deleted"
+}
+```
+</details>
 
-## Name
-Choose a self-explaining name for your project.
+<details>
+<summary>
+<b>🟩POST</b> /old_sales
+</summary>
+<p>Response 200:</p>
+</details>
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+<details>
+<summary>
+<b>🟩POST</b> /split_sale
+</summary>
+Tabela Particionada
+<p>Response 200:</p>
+``` json
+{
+   "message": "Currículo inserido com sucesso"
+}
+```
+</details>
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+<details>
+<summary>
+<b>🟩POST</b> client_data_portability/[CPF do usuário]
+</summary>
+Faz a portabilidade do usuário
+<p>Response 200:</p>
+</details>
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+<a name="tecnologia"></a>
+## Tecnologias Utilizadas:
+ * python
+ ** Django
+ ** criptografia simetrica aes128 bytes
+ * MongoDb
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+<a name="equipe"></a>
+# INTEGRANTES
+ * GUSTAVO RIBEIRO DOS SANTOS 
+ * ARTHUR CARDOSO RINALDI DA SILVA
+ * VINICIUS FERNANDES DE LIMA 
