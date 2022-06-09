@@ -6,7 +6,7 @@ Hoje, para uma empresa realizar a exclusão do dado de um dos seus clientes exis
 A criptografia auxilia na privatização desses dados.
 
 ### Particionamento
-O particionamento funciona da seguinte maneira, partimos da tabela "vendas", onde nela tinham tanto os dados da venda quanto do clinete que fez a venda, a partir do momento que particionamos essa tabela, separamos os dados da venda e do cliente, sendo assim possivel apagar os dados do cliente sem precisar apagar a venda.
+O particionamento funciona da seguinte maneira, partimos da tabela "vendas", onde nela tinham tanto os dados da venda quanto do cliente que fez a venda, a partir do momento que particionamos essa tabela, separamos os dados da venda e do cliente, sendo assim possivel apagar os dados do cliente sem precisar apagar a venda.
 Para fazer isso foi necessário primeiro fazer pegar os dados da tabela "vendas", e após isso foi feito a separação dos dados. Com os dados que foram separados inserimos em outros 2 bancos.
 
 ### Portabilidade de dados
@@ -15,7 +15,7 @@ No caso deste projeto, para assegurar a integridade e segurança dos dados do cl
 <a name="estrutura"></a>
 # Estrutura do Projeto
 ## Diagrama de caso de uso:
-![Casos de uso](/Documentos/CasoUso1.png)
+![Casos de uso](/caso_de_uso.PNG)
 
 
 ## Modelo do banco de dados:
@@ -173,8 +173,8 @@ Faz a portabilidade do usuário
 <a name="tecnologia"></a>
 ## Tecnologias Utilizadas:
  * python
- ** Django
- ** criptografia simetrica aes128 bytes
+ * Django
+ * criptografia simetrica aes128 bytes
  * MongoDb
 
 
